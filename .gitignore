@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+config.yaml
+config.yml
+.yt2jellyfin/
+*.db
+*.db-wal
+*.db-shm

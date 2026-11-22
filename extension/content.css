@@ -1,0 +1,55 @@
+#yt2j-btn {
+  position: fixed;
+  right: 18px;
+  bottom: 72px;
+  z-index: 2147483646;
+  background: #7b6cff;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font: 600 13px/1 system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  opacity: 0.92;
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+
+#yt2j-btn:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+#yt2j-btn.yt2j-busy {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+#yt2j-toast {
+  position: fixed;
+  right: 18px;
+  bottom: 124px;
+  z-index: 2147483647;
+  background: #1a2129;
+  color: #e7ecf1;
+  border: 1px solid #2c3640;
+  border-left: 3px solid #3ecf8e;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font: 500 13px/1.4 system-ui, sans-serif;
+  max-width: 320px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: 0.25s ease;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+#yt2j-toast.yt2j-err {
+  border-left-color: #ff6b6b;
+  color: #ff9b9b;
+}
+
+#yt2j-toast.yt2j-show {
+  opacity: 1;
+  transform: none;
+}

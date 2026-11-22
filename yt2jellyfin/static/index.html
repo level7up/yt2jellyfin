@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>yt2jellyfin</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2129;
+      --border: #2c3640;
+      --text: #e7ecf1;
+      --muted: #8b98a5;
+      --accent: #7b6cff;
+      --ok: #3ecf8e;
+      --err: #ff6b6b;
+      --warn: #f0b429;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    header h1 { margin: 0; font-size: 1.25rem; font-weight: 650; }
+    header h1 span { color: var(--accent); }
+    .lib {
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-family: ui-monospace, monospace;
+      word-break: break-all;
+    }
+    main { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    form.add { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    form.add input[type="url"] {
+      flex: 1 1 320px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 0.7rem 0.9rem;
+      font-size: 0.95rem;
+    }
+    form.add input[type="url"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.7rem 1.1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { filter: brightness(1.1); }
+    button.ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.35rem 0.7rem;
+      font-weight: 500;
+      font-size: 0.8rem;
+    }
+    button.ghost:hover { color: var(--text); border-color: var(--muted); filter: none; }
+    .stats {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .stats b { color: var(--text); font-weight: 650; }
+    .dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 0.35rem;
+      background: var(--muted);
+    }
+    .dot.ok { background: var(--ok); }
+    .dot.err { background: var(--err); }
+    .dot.run { background: var(--warn); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th {
+      text-align: left;
+      color: var(--muted);
+      font-weight: 550;
+      padding: 0.5rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    td { padding: 0.65rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .status {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 650;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .status.pending { background: #3a3f4b; color: #c5ccd6; }
+    .status.running { background: #4a3d1a; color: var(--warn); }
+    .status.done { background: #163528; color: var(--ok); }
+    .status.failed { background: #3d1f1f; color: var(--err); }
+    .status.skipped { background: #2a3340; color: var(--muted); }
+    .url {
+      font-family: ui-monospace, monospace;
+      font-size: 0.8rem;
+      color: var(--text);
+      word-break: break-all;
+    }
+    .msg { color: var(--muted); font-size: 0.8rem; margin-top: 0.2rem; }
+    .msg.error { color: var(--err); }
+    .bar {
+      height: 5px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-top: 0.35rem;
+      min-width: 70px;
+    }
+    .bar > i {
+      display: block;
+      height: 100%;
+      background: var(--accent);
+      border-radius: 99px;
+      transition: width 0.3s ease;
+    }
+    .actions { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .empty { color: var(--muted); text-align: center; padding: 1.5rem 0; }
+    .cli-box {
+      margin-top: 0.85rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid var(--border);
+    }
+    .cli-label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-bottom: 0.4rem;
+    }
+    .cli-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .cli-row code {
+      flex: 1 1 320px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.55rem 0.75rem;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.8rem;
+      color: var(--ok);
+      word-break: break-all;
+      user-select: all;
+    }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .toolbar h2 { margin: 0; font-size: 0.95rem; font-weight: 650; }
+    #toast {
+      position: fixed;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: 0.25s ease;
+      pointer-events: none;
+      max-width: 320px;
+    }
+    #toast.show { opacity: 1; transform: none; }
+    #toast.err { border-color: var(--err); color: var(--err); }
+
+    .dest-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 0.7rem;
+    }
+    .dest-row label { color: var(--muted); font-size: 0.85rem; }
+    .dest-row input {
+      flex: 1 1 280px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.85rem;
+      font-family: ui-monospace, monospace;
+    }
+    .dest-row input:focus { outline: none; border-color: var(--accent); }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+    .modal.hidden { display: none; }
+    .modal-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      width: min(560px, 92vw);
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      gap: 0.6rem;
+    }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; }
+    .modal-path {
+      font-family: ui-monospace, monospace;
+      font-size: 0.8rem;
+      color: var(--ok);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.45rem 0.6rem;
+      word-break: break-all;
+    }
+    .modal-list {
+      overflow-y: auto;
+      flex: 1;
+      min-height: 180px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      padding: 0.3rem;
+    }
+    .folder-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      padding: 0.45rem 0.6rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.88rem;
+    }
+    .folder-item:hover { background: var(--panel); }
+    .folder-item.drive { color: var(--accent); font-weight: 600; }
+    .modal-foot { display: flex; justify-content: space-between; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><span>yt</span>2jellyfin</h1>
+    <div class="lib" id="lib">…</div>
+  </header>
+  <main>
+    <div class="card">
+      <form class="add" id="add-form">
+        <input type="url" id="url" required placeholder="https://www.youtube.com/watch?v=… (video, playlist, or channel)" autocomplete="off" />
+        <button type="submit">Download</button>
+      </form>
+      <div class="dest-row">
+        <label for="dest">Save to:</label>
+        <input type="text" id="dest" placeholder="default library folder" autocomplete="off" />
+        <button type="button" class="ghost" id="btn-browse">Browse…</button>
+        <button type="button" class="ghost" id="btn-dest-reset" title="Reset to default library">Reset</button>
+      </div>
+      <div class="cli-box">
+        <div class="cli-label">CLI equivalent — copy &amp; run in terminal:</div>
+        <div class="cli-row">
+          <code id="cli-cmd">yt2jellyfin download -w "https://www.youtube.com/watch?v=…"</code>
+          <button type="button" class="ghost" id="btn-copy-cli">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="card">
+      <div class="toolbar">
+        <h2>Queue</h2>
+        <div class="actions">
+          <button class="ghost" id="btn-refresh">Refresh</button>
+          <button class="ghost" id="btn-clear">Clear finished</button>
+        </div>
+      </div>
+      <div id="jobs"><div class="empty">Loading…</div></div>
+    </div>
+  </main>
+
+  <div id="folder-modal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-head">
+        <b>Select folder</b>
+        <button type="button" class="ghost" id="folder-close">✕</button>
+      </div>
+      <div class="modal-path" id="folder-path">…</div>
+      <div class="modal-list" id="folder-list"></div>
+      <div class="modal-foot">
+        <button type="button" class="ghost" id="folder-up">↑ Up</button>
+        <button type="button" id="folder-pick">Use this folder</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+
+    const DEFAULT_CLI = 'yt2jellyfin download -w "https://www.youtube.com/watch?v=…"';
+    let defaultLib = "";
+    function updateCliCmd() {
+      const url = $("#url").value.trim();
+      const dest = $("#dest").value.trim();
+      let cmd = DEFAULT_CLI;
+      if (url || dest) {
+        const parts = ["yt2jellyfin download"];
+        if (dest) parts.push(`-o "${dest.replace(/"/g, '\\"')}"`);
+        parts.push("-w");
+        parts.push(`"${(url || "https://www.youtube.com/watch?v=…").replace(/"/g, '\\"')}"`);
+        cmd = parts.join(" ");
+      }
+      $("#cli-cmd").textContent = cmd;
+    }
+    $("#url").addEventListener("input", updateCliCmd);
+    $("#dest").addEventListener("input", updateCliCmd);
+
+    $("#btn-dest-reset").addEventListener("click", () => {
+      $("#dest").value = "";
+      updateCliCmd();
+    });
+
+    $("#btn-copy-cli").addEventListener("click", async () => {
+      const cmd = $("#cli-cmd").textContent;
+      try {
+        await navigator.clipboard.writeText(cmd);
+        toast("CLI command copied");
+      } catch {
+        // fallback: select the text so user can Ctrl+C
+        const range = document.createRange();
+        range.selectNodeContents($("#cli-cmd"));
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        toast("Selected — press Ctrl+C");
+      }
+    });
+
+    function toast(msg, err = false) {
+      const t = $("#toast");
+      t.textContent = msg;
+      t.classList.toggle("err", err);
+      t.classList.add("show");
+      clearTimeout(t._h);
+      t._h = setTimeout(() => t.classList.remove("show"), 3200);
+    }
+
+    async function api(path, opts = {}) {
+      const res = await fetch(path, {
+        headers: { "Content-Type": "application/json" },
+        ...opts,
+      });
+      if (!res.ok) {
+        let detail = res.statusText;
+        try { detail = (await res.json()).detail || detail; } catch {}
+        throw new Error(detail);
+      }
+      return res.json();
+    }
+
+    async function refresh() {
+      try {
+        const [health, jobs] = await Promise.all([
+          api("/api/health"),
+          api("/api/jobs"),
+        ]);
+        $("#lib").textContent = "library: " + health.library_path;
+        defaultLib = health.library_path;
+        const c = health.counts || {};
+        const workerDot = health.worker_running
+          ? (health.active > 0 ? "run" : "ok")
+          : "err";
+        $("#stats").innerHTML = `
+          <span><span class="dot ${workerDot}"></span>worker ${health.worker_running ? "on" : "off"}${health.active ? " · " + health.active + " active" : ""}</span>
+          <span>pending <b>${c.pending || 0}</b></span>
+          <span>running <b>${c.running || 0}</b></span>
+          <span>done <b>${c.done || 0}</b></span>
+          <span>failed <b>${c.failed || 0}</b></span>
+        `;
+        renderJobs(jobs);
+      } catch (e) {
+        toast("Refresh failed: " + e.message, true);
+      }
+    }
+
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      }[c]));
+    }
+
+    function dirnameWin(p) {
+      const norm = String(p).replace(/[\\/]+$/, "");
+      const i = Math.max(norm.lastIndexOf("/"), norm.lastIndexOf("\\"));
+      return i > 0 ? norm.slice(0, i) : norm;
+    }
+
+    async function openPath(path) {
+      try {
+        await api("/api/open", { method: "POST", body: JSON.stringify({ path }) });
+        toast("Opened");
+      } catch (e) {
+        toast(e.message, true);
+      }
+    }
+
+    function renderJobs(jobs) {
+      const el = $("#jobs");
+      if (!jobs.length) {
+        el.innerHTML = '<div class="empty">No jobs yet — paste a YouTube URL above.</div>';
+        return;
+      }
+      const rows = jobs.map((j) => {
+        const pct = Math.max(0, Math.min(100, j.progress || 0));
+        const showBar = j.status === "running" || (j.status === "pending" && j.attempts > 0);
+        return `<tr>
+          <td><span class="status ${esc(j.status)}">${esc(j.status)}</span></td>
+          <td>
+            <div class="url">${esc(j.url)}</div>
+            <div class="msg ${j.error ? "error" : ""}">${esc(j.error || j.message || "")}</div>
+            ${showBar ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ""}
+          </td>
+          <td style="white-space:nowrap">${j.attempts > 0 ? esc(j.attempts + "/" + j.max_attempts) : ""}</td>
+          <td>
+            <div class="actions">
+              ${j.status === "done" && j.output
+                ? `<button class="ghost" data-act="open" data-path="${esc(j.output)}" title="Open the downloaded file">Open</button>` : ""}
+              ${j.status === "done" && j.output
+                ? `<button class="ghost" data-act="folder" data-path="${esc(dirnameWin(j.output))}" title="Open containing folder">Folder</button>` : ""}
+              ${j.status === "failed" || j.status === "done"
+                ? `<button class="ghost" data-act="retry" data-id="${esc(j.id)}">Retry</button>` : ""}
+              ${j.status === "pending" || j.status === "running"
+                ? `<button class="ghost" data-act="del" data-id="${esc(j.id)}">Remove</button>` : ""}
+            </div>
+          </td>
+        </tr>`;
+      }).join("");
+      el.innerHTML = `<table>
+        <thead><tr><th>Status</th><th>Job</th><th>Tries</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    }
+
+    $("#add-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const url = $("#url").value.trim();
+      const dest = $("#dest").value.trim();
+      if (!url) return;
+      try {
+        await api("/api/jobs", {
+          method: "POST",
+          body: JSON.stringify({ url, dest: dest || null }),
+        });
+        $("#url").value = "";
+        toast("Queued" + (dest ? " → " + dest : ""));
+        refresh();
+      } catch (err) {
+        toast(err.message, true);
+      }
+    });
+
+    $("#jobs").addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-act]");
+      if (!btn) return;
+      const { act, id, path } = btn.dataset;
+      try {
+        if (act === "del") await api("/api/jobs/" + id, { method: "DELETE" });
+        if (act === "retry") await api("/api/jobs/" + id + "/retry", { method: "POST" });
+        if (act === "open" || act === "folder") await openPath(path);
+        else refresh();
+      } catch (err) {
+        toast(err.message, true);
+      }
+    });
+
+    /* ---------- folder picker ---------- */
+    let browsePath = null;
+
+    async function loadFolders(path) {
+      const q = path ? "?path=" + encodeURIComponent(path) : "";
+      const data = await api("/api/folders" + q);
+      browsePath = data.path;
+      $("#folder-path").textContent = data.path;
+      const items = [];
+      if (data.drives && data.drives.length && path == null) {
+        for (const d of data.drives) {
+          items.push(`<button type="button" class="folder-item drive" data-go="${esc(d)}\\">${esc(d)}\\</button>`);
+        }
+      }
+      for (const dir of data.dirs || []) {
+        items.push(`<button type="button" class="folder-item" data-go="${esc(data.path + "\\" + dir)}">${esc(dir)}</button>`);
+      }
+      if (!items.length) items.push('<div class="empty">No subfolders</div>');
+      $("#folder-list").innerHTML = items.join("");
+      $("#folder-up").disabled = !data.parent;
+      $("#folder-up").onclick = () => loadFolders(data.parent).catch((e) => toast(e.message, true));
+    }
+
+    $("#folder-list").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-go]");
+      if (!b) return;
+      loadFolders(b.dataset.go).catch((err) => toast(err.message, true));
+    });
+
+    $("#btn-browse").addEventListener("click", async () => {
+      $("#folder-modal").classList.remove("hidden");
+      try {
+        const start = $("#dest").value.trim() || defaultLib || null;
+        await loadFolders(start);
+      } catch (e) {
+        toast(e.message, true);
+      }
+    });
+    $("#folder-close").addEventListener("click", () => $("#folder-modal").classList.add("hidden"));
+    $("#folder-modal").addEventListener("click", (e) => {
+      if (e.target.id === "folder-modal") $("#folder-modal").classList.add("hidden");
+    });
+    $("#folder-pick").addEventListener("click", () => {
+      if (browsePath) {
+        $("#dest").value = browsePath;
+        updateCliCmd();
+      }
+      $("#folder-modal").classList.add("hidden");
+    });
+
+    $("#btn-refresh").addEventListener("click", refresh);
+    $("#btn-clear").addEventListener("click", async () => {
+      try {
+        const r = await api("/api/jobs/clear", { method: "POST" });
+        toast("Removed " + r.removed + " job(s)");
+        refresh();
+      } catch (err) {
+        toast(err.message, true);
+      }
+    });
+
+    refresh();
+    setInterval(refresh, 2500);
+  </script>
+</body>
+</html>

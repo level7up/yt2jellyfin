@@ -1,0 +1,50 @@
+# yt2jellyfin configuration
+# Copy to config.yaml (or pass -c path) and edit.
+
+# Folder Jellyfin watches as a library (Movies or a custom library).
+library_path: "D:/media/youtube"
+
+# Optional: keep yt-dlp download-archive here so re-runs skip finished videos.
+# Relative paths are resolved against this config file's directory.
+download_archive: ".yt2jellyfin/archive.txt"
+
+quality:
+  # Max video height; null = best available.
+  max_height: 1080
+  # Override yt-dlp format selector entirely (null = built from max_height).
+  format: null
+
+subtitles:
+  enabled: true
+  langs:
+    - en
+    - "en-US"
+  # Embed into the video file (requires ffmpeg). Falls back to sidecar .srt.
+  embed: true
+  # Also keep sidecar subtitle files next to the video.
+  sidecar: false
+
+metadata:
+  nfo: true
+  # poster.jpg / fanart.jpg next to the video.
+  poster: true
+  fanart: true
+
+download:
+  # Parallel downloads in the worker.
+  concurrent: 1
+  retries: 3
+  # Seconds before first retry; doubles each attempt.
+  retry_delay: 30
+  # Restrict playlist/channel downloads to newest N items (null = all).
+  playlist_items: null
+  # Optional cookies for restricted videos: path to Netscape cookie file
+  # or a browser name for yt-dlp cookies-from-browser (e.g. chrome, firefox).
+  cookies_from_browser: null
+  cookiefile: null
+  # Sleep between downloads of the same host (seconds), e.g. 2.
+  sleep: null
+
+web:
+  host: "127.0.0.1"
+  port: 8392

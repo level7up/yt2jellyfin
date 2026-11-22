@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>yt2jellyfin</title>
+  <style>
+    :root {
+      --bg: #0f1419; --panel: #1a2129; --border: #2c3640;
+      --text: #e7ecf1; --muted: #8b98a5; --accent: #7b6cff;
+      --ok: #3ecf8e; --err: #ff6b6b; --warn: #f0b429;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; width: 340px; background: var(--bg); color: var(--text);
+      font: 13px/1.45 system-ui, sans-serif; padding: 12px;
+    }
+    header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    header b { font-size: 14px; }
+    header b span { color: var(--accent); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+    .dot.ok { background: var(--ok); }
+    .dot.err { background: var(--err); }
+    .spacer { flex: 1; }
+    .stats { display: flex; gap: 10px; color: var(--muted); font-size: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+    .stats b { color: var(--text); }
+    input[type="url"] {
+      width: 100%; background: var(--panel); border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px; padding: 8px 10px; font-size: 12.5px;
+    }
+    input:focus { outline: none; border-color: var(--accent); }
+    .row { display: flex; gap: 6px; margin-top: 8px; }
+    button {
+      background: var(--accent); color: #fff; border: none; border-radius: 8px;
+      padding: 8px 12px; font-weight: 600; font-size: 12.5px; cursor: pointer;
+    }
+    button:hover { filter: brightness(1.1); }
+    button.ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); font-weight: 500; }
+    button.ghost:hover { color: var(--text); filter: none; }
+    .jobs { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 8px; max-height: 220px; overflow-y: auto; }
+    .job { padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+    .job:last-child { border-bottom: none; }
+    .job .u { color: var(--text); word-break: break-all; }
+    .job .m { color: var(--muted); font-size: 11px; }
+    .status {
+      display: inline-block; padding: 1px 6px; border-radius: 99px;
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+    }
+    .status.done { background: #163528; color: var(--ok); }
+    .status.failed { background: #3d1f1f; color: var(--err); }
+    .status.running { background: #4a3d1a; color: var(--warn); }
+    .status.pending { background: #3a3f4b; color: #c5ccd6; }
+    .empty { color: var(--muted); text-align: center; padding: 14px 0; }
+    .err-box { color: var(--err); font-size: 12px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="dot" id="dot"></span>
+    <b><span>yt</span>2jellyfin</b>
+    <span class="spacer"></span>
+    <button class="ghost" id="btn-options" title="Settings">⚙</button>
+    <button class="ghost" id="btn-web" title="Open web UI">Web UI</button>
+  </header>
+
+  <div class="stats" id="stats">Connecting…</div>
+
+  <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off" />
+  <div class="row">
+    <button id="btn-send" style="flex:1">Send to Jellyfin</button>
+    <button class="ghost" id="btn-tab" title="Use current tab URL">Current tab</button>
+  </div>
+  <div class="err-box" id="err" hidden></div>
+
+  <div class="jobs" id="jobs"><div class="empty">No jobs</div></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
