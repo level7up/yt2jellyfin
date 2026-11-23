@@ -12,3 +12,6 @@ config.yml
 *.db
 *.db-wal
 *.db-shm
+vendor/
+assets/*.ico
+*.spec.bak

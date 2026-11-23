@@ -13,7 +13,7 @@ with posters, NFO metadata, subtitles, a resilient job queue, web UI & Chrome ex
 [![Jellyfin](https://img.shields.io/badge/Jellyfin-supported-7b6cff?logo=jellyfin&logoColor=white)](https://jellyfin.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-web%20UI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 
-[Features](#-features) · [Quick start](#-quick-start) · [CLI](#%EF%B8%8F-cli) · [Web UI](#-web-ui) · [Chrome extension](#-chrome-extension) · [Config](#-configuration)
+[Features](#-features) · [Quick start](#-quick-start) · [Windows app](#-windows-app) · [CLI](#%EF%B8%8F-cli) · [Web UI](#-web-ui) · [Chrome extension](#-chrome-extension) · [Config](#-configuration)
 
 </div>
 
@@ -44,6 +44,7 @@ with posters, NFO metadata, subtitles, a resilient job queue, web UI & Chrome ex
 - Parallel-safe worker for cron / Task Scheduler
 
 🖥️ **Three ways to use it**
+- **Windows app** — double-click `.exe`, no Python/ffmpeg needed
 - **CLI** — scriptable & pipe-friendly
 - **Web UI** — paste URLs, watch live progress
 - **Chrome extension** — send YouTube tabs in one click
@@ -97,6 +98,29 @@ library_path: "D:/media/youtube"   # ← your Jellyfin library folder
 ├── Video Title [abc123XYZ].poster.jpg
 └── Another Video [def456UVW].mp4
 ```
+
+---
+
+## 🪟 Windows app
+
+**End users need nothing** — no Python, no ffmpeg. Grab the portable build from [Releases](https://github.com/level7up/yt2jellyfin/releases):
+
+1. Download & unzip `yt2jellyfin-windows.zip`
+2. Double-click **`yt2jellyfin.exe`**
+3. First run creates `config.yaml` next to the exe (default library: `Videos\YouTube`) — edit `library_path` to your Jellyfin folder
+4. Paste URLs in the window (or use the Chrome extension)
+
+The window is the existing web UI (native frame, no browser bar). ffmpeg/ffprobe are bundled.
+
+### Build the exe yourself
+
+```bash
+# On Windows, from a clone:
+python scripts/build_exe.py
+# → dist/yt2jellyfin/yt2jellyfin.exe   (~100–150 MB with essentials ffmpeg)
+```
+
+What it does: `pip install` deps → download portable ffmpeg essentials into `vendor/ffmpeg/` → PyInstaller (`yt2jellyfin.spec`).
 
 ---
 
@@ -230,13 +254,15 @@ flowchart LR
 
 | Module | Role |
 |--------|------|
-| `yt2jellyfin/config.py` | YAML config discovery + defaults |
-| `yt2jellyfin/downloader.py` | yt-dlp wrapper, format selector, validation |
+| `yt2jellyfin/config.py` | YAML config discovery + defaults (portable exe aware) |
+| `yt2jellyfin/downloader.py` | yt-dlp wrapper, format selector, bundled ffmpeg lookup |
 | `yt2jellyfin/metadata.py` | `.nfo`, `poster.jpg`, `fanart.jpg` |
 | `yt2jellyfin/queue.py` | SQLite jobs, backoff retries, threaded worker |
 | `yt2jellyfin/cli.py` | `download` · `queue` · `worker` · `serve` · `config` · `info` |
+| `yt2jellyfin/desktop.py` | Native window entry (pywebview + local server) |
 | `yt2jellyfin/web.py` + `static/` | REST API + single-page UI |
 | `extension/` | Chrome extension (Manifest V3) |
+| `scripts/` | `fetch_ffmpeg.py` · `build_exe.py` |
 
 ---
 

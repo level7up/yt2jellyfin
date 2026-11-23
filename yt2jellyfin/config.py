@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -8,6 +9,17 @@ from typing import Any
 import yaml
 
 DEFAULT_CONFIG_NAMES = ("config.yaml", "config.yml")
+
+
+def is_frozen() -> bool:
+    return bool(getattr(sys, "frozen", False))
+
+
+def app_dir() -> Path:
+    """Directory for portable state (config + queue) when running as an exe."""
+    if is_frozen():
+        return Path(sys.executable).resolve().parent
+    return Path.cwd()
 
 
 def find_config(explicit: str | Path | None = None) -> Path | None:
@@ -21,6 +33,18 @@ def find_config(explicit: str | Path | None = None) -> Path | None:
         p = Path(env).expanduser()
         if p.is_file():
             return p
+    if is_frozen():
+        # Portable exe: prefer config next to the binary, then APPDATA.
+        for name in DEFAULT_CONFIG_NAMES:
+            cand = app_dir() / name
+            if cand.is_file():
+                return cand
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            for name in DEFAULT_CONFIG_NAMES:
+                cand = Path(appdata) / "yt2jellyfin" / name
+                if cand.is_file():
+                    return cand
     here = Path.cwd()
     for base in (here, *here.parents):
         for name in DEFAULT_CONFIG_NAMES:
@@ -95,6 +119,8 @@ class Config:
             return self.state_dir
         if self.config_path:
             return self.config_path.parent / ".yt2jellyfin"
+        if is_frozen():
+            return app_dir() / ".yt2jellyfin"
         return Path.cwd() / ".yt2jellyfin"
 
     @property

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import logging
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from yt2jellyfin.config import Config
+from yt2jellyfin.config import Config, is_frozen
 from yt2jellyfin.library import ensure_dir
 from yt2jellyfin.metadata import write_artwork, write_nfo
 
@@ -14,10 +15,51 @@ log = logging.getLogger(__name__)
 ProgressHook = Callable[[dict[str, Any]], None]
 
 
-def _ffmpeg_available() -> bool:
+def _tool_search_dirs() -> list[Path]:
+    """Where to look for bundled ffmpeg/ffprobe before PATH."""
+    dirs: list[Path] = []
+    if is_frozen():
+        exe = Path(sys.executable).resolve().parent
+        meipass = Path(getattr(sys, "_MEIPASS", exe))
+        dirs.extend(
+            [
+                exe / "ffmpeg",
+                exe,
+                meipass / "ffmpeg",
+                meipass,
+            ]
+        )
+    # repo / vendor layout (build scripts, dev machines)
+    pkg_root = Path(__file__).resolve().parent.parent
+    dirs.extend([pkg_root / "vendor" / "ffmpeg", pkg_root / "vendor" / "ffmpeg" / "bin"])
+    # dedupe preserving order
+    seen: set[str] = set()
+    out: list[Path] = []
+    for d in dirs:
+        key = str(d)
+        if key not in seen:
+            seen.add(key)
+            out.append(d)
+    return out
+
+
+def find_tool(name: str) -> str | None:
+    """Locate ffmpeg/ffprobe: bundled first, then PATH."""
     import shutil
 
-    return shutil.which("ffmpeg") is not None
+    exe_name = f"{name}.exe" if sys.platform == "win32" else name
+    for d in _tool_search_dirs():
+        cand = d / exe_name
+        try:
+            if cand.is_file():
+                return str(cand)
+        except OSError:
+            continue
+    return shutil.which(name)
+
+
+def _ffmpeg_available() -> bool:
+    return find_tool("ffmpeg") is not None
 
 
 def _require_ffmpeg() -> None:
@@ -31,10 +73,9 @@ def _require_ffmpeg() -> None:
 def _probe_streams(path: Path) -> list[dict[str, str]]:
     """Return stream info via ffprobe: [{codec_type, codec_name}, ...]."""
     import json
-    import shutil
     import subprocess
 
-    ffprobe = shutil.which("ffprobe")
+    ffprobe = find_tool("ffprobe")
     if not ffprobe:
         return []
     try:
@@ -124,6 +165,9 @@ def _make_ydl_opts(
     if has_ffmpeg:
         opts["merge_output_format"] = "mp4"
         opts["format_sort"] = ["res", "ext:mp4:m4a"]
+        ffmpeg_path = find_tool("ffmpeg")
+        if ffmpeg_path:
+            opts["ffmpeg_location"] = str(Path(ffmpeg_path).parent)
 
     if cfg.download_archive:
         # Archive is per destination: re-downloading the same video into a
